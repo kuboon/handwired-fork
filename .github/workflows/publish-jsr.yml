@@ -1,0 +1,32 @@
+name: Publish to JSR
+
+# src/runtime/ is published as @kuboon/handwired when its version in jsr.json changes on main.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/runtime/jsr.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # JSR authenticates the publish with the workflow's OIDC token, so no secret is needed.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/runtime
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno publish
+        working-directory: src/runtime

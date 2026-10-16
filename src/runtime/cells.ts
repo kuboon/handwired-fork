@@ -55,15 +55,15 @@ function cell(policy: CellPolicy, range: Range, exactBit: boolean, options: Cell
   return {kind: 'cell', policy, range, initial: options.initial ?? 0, exactBit, grid: options.grid}
 }
 
-export const constant = (value: number, range: Range, options: {grid?: number} = {}) =>
+export const constant = (value: number, range: Range, options: {grid?: number} = {}): CellSpec =>
   cell('constant', range, false, {...options, initial: value})
-export const input = (range: Range, options: CellOptions = {}) => cell('input', range, false, options)
+export const input = (range: Range, options: CellOptions = {}): CellSpec => cell('input', range, false, options)
 // An exact bit that JavaScript writes, e.g. the settle check bit that advanceFrame plans.
-export const inputBit = (initial = 0) => cell('input', unitInterval, true, {initial})
-export const event = (options: BitOptions = {}) => cell('event', unitInterval, true, options)
-export const state = (range: Range, options: CellOptions = {}) => cell('state', range, false, options)
+export const inputBit = (initial = 0): CellSpec => cell('input', unitInterval, true, {initial})
+export const event = (options: BitOptions = {}): CellSpec => cell('event', unitInterval, true, options)
+export const state = (range: Range, options: CellOptions = {}): CellSpec => cell('state', range, false, options)
 // An exact bit that the program computes, e.g. whether a window is open.
-export const stateBit = (initial = 0, options: BitOptions = {}) => cell('state', unitInterval, true, {...options, initial})
+export const stateBit = (initial = 0, options: BitOptions = {}): CellSpec => cell('state', unitInterval, true, {...options, initial})
 
 export function list<Element>(count: number, make: (index: number) => Element): Element[] {
   return Array.from({length: count}, (_, index) => make(index))
@@ -100,7 +100,7 @@ export function permutation(order: readonly number[], options: BitOptions = {}):
 
 // The index of each field within a flat struct of cells, and the struct's cell count, e.g. {left: 0, top: 1, size: 2}
 // for {left: state(pixel), top: state(pixel)}. For code that reads a struct's cells by index rather than by name.
-export function fieldIndices<S extends {readonly [field: string]: CellSpec}>(struct: S) {
+export function fieldIndices<S extends {readonly [field: string]: CellSpec}>(struct: S): {-readonly [Field in keyof S]: number} & {size: number} {
   const fields = Object.keys(struct)
   return {...Object.fromEntries(fields.map((field, index) => [field, index])), size: fields.length} as {-readonly [Field in keyof S]: number} & {size: number}
 }
@@ -120,9 +120,26 @@ export type WireValues<S> = S extends Wire ? number : {-readonly [Field in keyof
 type DeclaredCell = {name: string, spec: CellSpec, next: Wire | undefined}
 type Rule = {name: string, rule: 'oneHot' | 'atMostOne', members: Wire[], allowAllZero: boolean, declareToCircuit: boolean}
 
-export type SourceTable = ReturnType<typeof createSourceTable>
+export type SourceTable = {
+  declare<S>(spec: S & Spec, name?: string): CellWires<S>
+  atMostOne(name: string, members: readonly Wire[]): void
+  readonly size: number
+  nameOf: (wire: Wire) => string
+  policyOf: (wire: Wire) => CellPolicy | undefined
+  createCircuit(): Circuit
+  next<S>(stored: S & WireStruct, next: NoInfer<S>): void
+  finish(): BuiltProgram
+}
 
-export function createSourceTable() {
+// What finish returns: the circuit, the wire of each cell's next value, the initial table and its validator.
+export type BuiltProgram = {
+  circuit: Circuit
+  nextSource: Wire[]
+  initialSource: Float32Array<ArrayBuffer>
+  validate: (source: Float32Array) => void
+}
+
+export function createSourceTable(): SourceTable {
   const cells: DeclaredCell[] = []
   const rules: Rule[] = []
   let circuit: Circuit | null = null
@@ -239,7 +256,7 @@ export function createSourceTable() {
 }
 
 // Wires, and lists and objects of them, e.g. {thumbOffset: Wire, switches: [{on: Wire}]}.
-type WireStruct = Wire | readonly WireStruct[] | {readonly [field: string]: WireStruct}
+export type WireStruct = Wire | readonly WireStruct[] | {readonly [field: string]: WireStruct}
 
 // Compiles the program for the next-state values and the outputs, and returns a
 // function that checks a source table, evaluates it, checks the next-state values

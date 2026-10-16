@@ -11,6 +11,9 @@ const config = {
     // The prefix networks, which only tests and lab code import, e.g. tests/runtime/prefix-networks.test.ts,
     // lab/knuth-plass and the guide's examples in lab/ui-exploration/guide.
     'src/runtime/prefix-networks.ts',
+    // The JSR package's entries, see src/runtime/jsr.json.
+    'src/runtime/mod.ts',
+    'src/runtime/sexpr.ts',
     'lab/candidate-gallery/candidate-gallery.ts',
     'template/main.ts',
     // The template's switch in plain JavaScript, which only template/toggle.test.ts imports.
