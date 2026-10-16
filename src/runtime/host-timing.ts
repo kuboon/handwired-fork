@@ -58,7 +58,7 @@ export function validateSpringClockConfig(config: SpringClockConfig) {
 // the 1/64 ms grid. Quantizing absolute timestamps before subtracting makes the
 // durations of any split of a time span add up to the same number. `+ 0` turns
 // -0 into +0.
-export function quantizeTimeMs(timeStamp: number, config: SpringClockConfig = defaultSpringClockConfig) {
+export function quantizeTimeMs(timeStamp: number, config: SpringClockConfig = defaultSpringClockConfig): number {
   invariant(Number.isFinite(timeStamp), `a timestamp must be finite, got ${timeStamp}`)
   return Math.round(timeStamp * config.timeGrid) / config.timeGrid + 0
 }

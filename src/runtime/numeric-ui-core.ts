@@ -391,7 +391,7 @@ export class Circuit {
     return points
   }
 
-  isNonNegative(wire: Wire) {
+  isNonNegative(wire: Wire): boolean {
     return this.ranges[wire]!.minimum >= 0
   }
 
@@ -2436,7 +2436,7 @@ export function emitSpring(
   settleDistanceScale: Wire,
   settleSpeedScale: Wire,
   unit: Wire,
-) {
+): {position: Wire, velocity: Wire, active: Wire} {
   let position = positionSource
   let velocity = velocitySource
   for (let step = 0; step < 4; step++) {
